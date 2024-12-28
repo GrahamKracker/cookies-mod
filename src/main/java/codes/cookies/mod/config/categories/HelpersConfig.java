@@ -10,8 +10,8 @@ import codes.cookies.mod.config.system.options.ButtonOption;
 import codes.cookies.mod.config.system.options.EnumCycleOption;
 import codes.cookies.mod.config.system.options.SliderOption;
 import codes.cookies.mod.data.profile.items.ItemSources;
-import codes.cookies.mod.features.misc.utils.crafthelper.CraftHelperLocation;
-import codes.cookies.mod.features.misc.utils.crafthelper.CraftHelperPlacement;
+import codes.cookies.mod.features.crafthelper.CraftHelperLocation;
+import codes.cookies.mod.features.crafthelper.CraftHelperPlacementScreen;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -26,21 +26,21 @@ import java.util.List;
 public class HelpersConfig extends Category {
 
 
-    public BooleanOption anvilHelper = new BooleanOption(CONFIG_HELPERS_ANVIL_HELPER, false);
+	public BooleanOption anvilHelper = new BooleanOption(CONFIG_HELPERS_ANVIL_HELPER, false);
 
-    public BooleanOption itemChestTracker = new BooleanOption(CONFIG_HELPERS_CHEST_TRACKER, true);
+	public BooleanOption itemChestTracker = new BooleanOption(CONFIG_HELPERS_CHEST_TRACKER, true);
 
 	public CraftHelperFoldable craftHelper = new CraftHelperFoldable();
 
-    @Hidden
-    public SliderOption<Integer> craftHelperSlot = SliderOption.integerOption("", 14);
+	@Hidden
+	public SliderOption<Integer> craftHelperSlot = SliderOption.integerOption("", 14);
 
 	public class CraftHelperFoldable extends Foldable {
 		public BooleanOption craftHelper = new BooleanOption(CONFIG_HELPERS_CRAFT_HELPER_SETTING, true);
 
 		@Hidden
 		public EnumCycleOption<CraftHelperLocation> craftHelperLocation =
-				new EnumCycleOption<>("", CraftHelperLocation.RIGHT_INVENTORY);
+				new EnumCycleOption<>("", CraftHelperLocation.RIGHT);
 
 		public ButtonOption openCraftHelperLocationEditor = new ButtonOption(CONFIG_HELPERS_CRAFT_HELPER_LOCATIONS,
 				this::openCraftHelperEditor,
@@ -99,7 +99,7 @@ public class HelpersConfig extends Category {
 		}
 
 		private void openCraftHelperEditor() {
-			CookiesMod.openScreen(new CraftHelperPlacement());
+			CookiesMod.openScreen(new CraftHelperPlacementScreen());
 		}
 
 		@Override
@@ -110,16 +110,16 @@ public class HelpersConfig extends Category {
 
 
 	public HelpersConfig() {
-        super(new ItemStack(Items.SCAFFOLDING), CONFIG_HELPERS);
-    }
+		super(new ItemStack(Items.SCAFFOLDING), CONFIG_HELPERS);
+	}
 
-    @Override
-    public Row getRow() {
-        return Row.BOTTOM;
-    }
+	@Override
+	public Row getRow() {
+		return Row.BOTTOM;
+	}
 
-    @Override
-    public int getColumn() {
-        return 0;
-    }
+	@Override
+	public int getColumn() {
+		return 0;
+	}
 }

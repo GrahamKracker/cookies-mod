@@ -1,6 +1,4 @@
-package codes.cookies.mod.features.misc.utils.crafthelper;
-
-import java.util.ArrayList;
+package codes.cookies.mod.features.crafthelper;
 
 import codes.cookies.mod.config.ConfigManager;
 import codes.cookies.mod.repository.RepositoryItem;
@@ -10,33 +8,36 @@ import codes.cookies.mod.utils.skyblock.components.PressableField;
 import codes.cookies.mod.utils.skyblock.inventories.ClientSideInventory;
 import codes.cookies.mod.utils.skyblock.inventories.ItemBuilder;
 
+import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.Selectable;
 import net.minecraft.item.Items;
 import net.minecraft.text.Text;
 
-public class CraftHelperPlacement extends ClientSideInventory {
+public class CraftHelperPlacementScreen extends ClientSideInventory {
 
 	private static final int UNSELECTED_COLOR = Constants.SUCCESS_COLOR;
 	private final PressableField[] fields = new PressableField[CraftHelperLocation.values().length];
 	boolean removeItemAfterwards = false;
 	private CraftHelperLocation selected;
-	CraftHelperInstance defaultInstance;
+	CraftHelperItem defaultInstance;
 	boolean isClosed = false;
 
-	public CraftHelperPlacement() {
+	public CraftHelperPlacementScreen() {
 		super(Text.translatable(TranslationKeys.CRAFT_HELPER_PLACEMENT), 6);
 		this.getContents().fill(new ItemBuilder(Items.BLACK_STAINED_GLASS_PANE).hideTooltips().build());
 		this.selected = ConfigManager.getConfig().helpersConfig.craftHelper.craftHelperLocation.getValue();
-		this.defaultInstance = new CraftHelperInstance(RepositoryItem.of("TERMINATOR"), 1, new ArrayList<>());
+		this.defaultInstance = new CraftHelperItem(RepositoryItem.of("TERMINATOR"), 1);
 	}
 
 	@Override
 	public void tick() {
-		if (CraftHelperManager.getActive() == CraftHelperInstance.EMPTY && !isClosed) {
-			CraftHelperManager.setActive(defaultInstance);
+		if (CraftHelperManager.getItems().isEmpty() && !isClosed) {
+			CraftHelperManager.getItems().push(defaultInstance);
 			removeItemAfterwards = true;
-			if (!defaultInstance.hasCalculated) {
-				defaultInstance.recalculate();
-			}
+			//if (!defaultInstance.isHasCalculated()) {
+			defaultInstance.recalculate();
+			//}
 		}
 	}
 
@@ -46,18 +47,6 @@ public class CraftHelperPlacement extends ClientSideInventory {
 		this.add(
 				new PressableField(0, this.getY() + 10, 10, this.cookies$getBackgroundHeight() - 20, UNSELECTED_COLOR),
 				CraftHelperLocation.LEFT);
-		this.add(new PressableField(
-				this.getX() - 9,
-				this.getY() + 10,
-				10,
-				this.cookies$getBackgroundHeight() - 20,
-				UNSELECTED_COLOR), CraftHelperLocation.LEFT_INVENTORY);
-		this.add(new PressableField(
-				this.getX() + this.cookies$getBackgroundWidth() - 1,
-				this.getY() + 10,
-				10,
-				this.cookies$getBackgroundHeight() - 20,
-				UNSELECTED_COLOR), CraftHelperLocation.RIGHT_INVENTORY);
 		this.add(new PressableField(
 				this.width - 10,
 				this.getY() + 10,
@@ -98,8 +87,9 @@ public class CraftHelperPlacement extends ClientSideInventory {
 		super.close();
 		isClosed = true;
 		if (this.removeItemAfterwards) {
-			CraftHelperManager.remove();
+			CraftHelperManager.getItems().pop();
 		}
 		ConfigManager.saveConfig(true, "edit-craft-helper-location");
 	}
+
 }

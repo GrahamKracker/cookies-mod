@@ -23,6 +23,13 @@ import codes.cookies.mod.utils.items.CookiesDataComponentTypes;
 import codes.cookies.mod.utils.items.ItemTooltipComponent;
 import codes.cookies.mod.utils.items.ItemUtils;
 import codes.cookies.mod.utils.items.ScrollableTooltipHandler;
+
+import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.Selectable;
+
+import net.minecraft.client.gui.screen.Screen;
+
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
@@ -60,7 +67,7 @@ import net.minecraft.util.Util;
  * Allows for saving of screens/inventories.
  */
 @Mixin(HandledScreen.class)
-public abstract class HandledScreenMixin implements InventoryScreenAccessor {
+public abstract class HandledScreenMixin extends Screen implements InventoryScreenAccessor {
 
 	@Unique
 	private static final Identifier ALLOW_SCREEN_SAVING = DevUtils.createIdentifier("save_handled_screens");
@@ -82,6 +89,10 @@ public abstract class HandledScreenMixin implements InventoryScreenAccessor {
 	@Shadow
 	@Nullable
 	public Slot focusedSlot;
+
+	protected HandledScreenMixin(Text title) {
+		super(title);
+	}
 
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
 	@SuppressWarnings("MissingJavadoc")
@@ -210,20 +221,24 @@ public abstract class HandledScreenMixin implements InventoryScreenAccessor {
 	@Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
 	public void onScroll(
 			CallbackInfoReturnable<Boolean> cir,
+			@Local(argsOnly = true, ordinal = 0) double mouseX,
+			@Local(argsOnly = true, ordinal = 1) double mouseY,
 			@Local(argsOnly = true, ordinal = 2) double horizontalAmount,
 			@Local(argsOnly = true, ordinal = 3) double verticalAmount
 	) {
-		if (!ConfigKeys.MISC_SCROLLABLE_TOOLTIP.get()) {
-			return;
-		}
 		if (((Object) this) instanceof HandledScreen<?> handledScreen) {
 			Slot focusedSlot = FocusedSlotAccessor.getFocusedSlot(handledScreen);
-			if (handledScreen.getScreenHandler().getCursorStack().isEmpty() && focusedSlot != null &&
-					focusedSlot.hasStack()) {
-				final ItemStack stack = focusedSlot.getStack();
-				ScrollableTooltipHandler.scroll(stack, horizontalAmount, verticalAmount);
+			if (handledScreen.getScreenHandler().getCursorStack().isEmpty() && focusedSlot != null && focusedSlot.hasStack()) {
+				if (ConfigKeys.MISC_SCROLLABLE_TOOLTIP.get()) {
+					final ItemStack stack = focusedSlot.getStack();
+					ScrollableTooltipHandler.scroll(stack, horizontalAmount, verticalAmount);
+					cir.setReturnValue(true);
+				}
+			}
+			if (this.hoveredElement(mouseX, mouseY).filter(element -> element.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)).isPresent()) {
 				cir.setReturnValue(true);
 			}
+
 		}
 	}
 
@@ -250,6 +265,11 @@ public abstract class HandledScreenMixin implements InventoryScreenAccessor {
 	@Override
 	public List<Disabled> cookies$getDisabled() {
 		return this.cookies$disabled;
+	}
+
+	@Override
+	public <T extends Element & Drawable & Selectable> T cookies$addDrawableChild(T drawableElement) {
+		return this.addDrawableChild(drawableElement);
 	}
 
 	@Inject(

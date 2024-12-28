@@ -71,7 +71,7 @@ public class CraftHelperInstance {
 		calculate.ifSuccess(this::finishRecalculation).ifError(errorMessage -> {
 			CookiesUtils.sendFailedMessage(Optional.ofNullable(errorMessage)
 					.orElse("An error occurred while evaluating the recipe tree."));
-			CraftHelperManager.remove();
+			//CraftHelperManager.remove();
 		});
 	}
 
@@ -131,13 +131,13 @@ public class CraftHelperInstance {
 
 		final ArrayList<TooltipComponent> craftHelperComponents = new ArrayList<>(list);
 		craftHelperComponents.addFirst(new SpacerComponent(0, width));
-		drawContext.drawTooltip(
+		/*drawContext.drawTooltip(
 				MinecraftClient.getInstance().textRenderer,
 				craftHelperComponents,
 				lastX,
 				lastY,
 				CraftHelperTooltipPositioner.INSTANCE,
-				null);
+				null);*/
 
 		final Optional<Pair<CraftHelperComponentPart, Integer>> textUnder = getTextUnder(mouseX, mouseY, list);
 		if (textUnder.isPresent()) {

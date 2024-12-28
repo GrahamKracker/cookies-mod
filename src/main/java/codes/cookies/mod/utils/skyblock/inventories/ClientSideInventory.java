@@ -15,13 +15,22 @@ import lombok.Getter;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Allows for creation of "inventories" that do exactly look like normal ones.
@@ -203,13 +212,18 @@ public class ClientSideInventory extends Screen implements InventoryScreenAccess
 	}
 
 	@Override
+	public <T extends Element & Drawable & Selectable> T cookies$addDrawableChild(T drawableElement) {
+		return this.addDrawableChild(drawableElement);
+	}
+
+	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		int offsetX = this.x + 8;
 		int offsetY = this.y + 18;
 		double localX = mouseX - offsetX;
 		double localY = mouseY - offsetY;
 		if (localX > this.slots[0].x && localX < this.slots[8].x + 18 && localY > this.slots[0].y &&
-			localY < this.slots[this.slots.length - 1].y + 18) {
+				localY < this.slots[this.slots.length - 1].y + 18) {
 			int slotX = (int) Math.floor(localX / 18);
 			int slotY = (int) Math.floor(localY / 18);
 
@@ -223,7 +237,7 @@ public class ClientSideInventory extends Screen implements InventoryScreenAccess
 				this.executeClick(slot, button);
 			}
 		} else if (localX > this.playerInventorySlots[9].x && localX < this.playerInventorySlots[8].x + 18 &&
-				   localY > this.playerInventorySlots[9].y && localY < this.playerInventorySlots[0].y + 18) {
+				localY > this.playerInventorySlots[9].y && localY < this.playerInventorySlots[0].y + 18) {
 			int slotX = (int) Math.floor(localX / 18);
 			int slotY = (int) Math.floor((localY - playerInventorySlots[9].y) / 18);
 
@@ -272,5 +286,4 @@ public class ClientSideInventory extends Screen implements InventoryScreenAccess
 			this.y = y;
 		}
 	}
-
 }

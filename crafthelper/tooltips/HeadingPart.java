@@ -7,7 +7,7 @@ import java.util.Objects;
 import codes.cookies.mod.CookiesMod;
 import codes.cookies.mod.features.misc.utils.crafthelper.CraftHelperInstance;
 import codes.cookies.mod.features.misc.utils.crafthelper.CraftHelperManager;
-import codes.cookies.mod.features.misc.utils.crafthelper.CraftHelperPlacement;
+import codes.cookies.mod.features.crafthelper.CraftHelperPlacement;
 import codes.cookies.mod.repository.RepositoryItem;
 import codes.cookies.mod.utils.RenderUtils;
 import codes.cookies.mod.utils.cookies.Constants;
@@ -49,7 +49,7 @@ public final class HeadingPart extends CraftHelperComponent {
 		this.formattedName = CraftHelperText.of(createHeading());
 		this.close = CraftHelperText.of(Text.empty().append(createMove()).append(" ").append(createClose()));
 		this.amountText = CraftHelperText.of(createAmount());
-		this.tooltipField = new TooltipFieldPart(5,5, 18, 18);
+		this.tooltipField = new TooltipFieldPart(5, 5, 18, 18);
 		this.tooltipField.setHoverText(getLore());
 	}
 
@@ -64,7 +64,7 @@ public final class HeadingPart extends CraftHelperComponent {
 
 	private void pressedClose() {
 		SoundUtils.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP);
-		CraftHelperManager.remove();
+		//CraftHelperManager.remove();
 	}
 
 	@Override

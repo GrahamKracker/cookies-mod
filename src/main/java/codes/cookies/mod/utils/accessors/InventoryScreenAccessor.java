@@ -1,6 +1,10 @@
 package codes.cookies.mod.utils.accessors;
 
 import java.util.List;
+
+import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
 
 /**
@@ -8,46 +12,54 @@ import net.minecraft.client.gui.screen.Screen;
  */
 public interface InventoryScreenAccessor {
 
-    static int getBackgroundWidth(Screen screen) {
-        return ((InventoryScreenAccessor) screen).cookies$getBackgroundWidth();
-    }
+	static int getBackgroundWidth(Screen screen) {
+		return ((InventoryScreenAccessor) screen).cookies$getBackgroundWidth();
+	}
 
-    static int getBackgroundHeight(Screen screen) {
-        return ((InventoryScreenAccessor) screen).cookies$getBackgroundHeight();
-    }
+	static int getBackgroundHeight(Screen screen) {
+		return ((InventoryScreenAccessor) screen).cookies$getBackgroundHeight();
+	}
 
-    static int getX(Screen screen) {
-        return ((InventoryScreenAccessor) screen).cookies$getX();
-    }
+	static int getX(Screen screen) {
+		return ((InventoryScreenAccessor) screen).cookies$getX();
+	}
 
-    static int getY(Screen screen) {
-        return ((InventoryScreenAccessor) screen).cookies$getY();
-    }
+	static int getY(Screen screen) {
+		return ((InventoryScreenAccessor) screen).cookies$getY();
+	}
 
-    static void setDisabled(Screen screen, Disabled disabled) {
-        ((InventoryScreenAccessor) screen).cookies$setDisable(disabled);
-    }
+	static void setDisabled(Screen screen, Disabled disabled) {
+		((InventoryScreenAccessor) screen).cookies$setDisable(disabled);
+	}
 
-    static boolean isDisabled(Screen screen, Disabled disabled) {
-        return ((InventoryScreenAccessor) screen).cookies$getDisabled().contains(disabled);
-    }
+	static boolean isDisabled(Screen screen, Disabled disabled) {
+		return ((InventoryScreenAccessor) screen).cookies$getDisabled().contains(disabled);
+	}
 
-    int cookies$getBackgroundWidth();
+	int cookies$getBackgroundWidth();
 
-    int cookies$getBackgroundHeight();
+	int cookies$getBackgroundHeight();
 
-    int cookies$getX();
+	int cookies$getX();
 
-    int cookies$getY();
+	int cookies$getY();
 
 
-    default void cookies$setDisable(Disabled disabled) {
-        cookies$getDisabled().add(disabled);
-    }
+	default void cookies$setDisable(Disabled disabled) {
+		cookies$getDisabled().add(disabled);
+	}
 
-    List<Disabled> cookies$getDisabled();
+	List<Disabled> cookies$getDisabled();
 
-    enum Disabled {
-        CRAFT_HELPER;
-    }
+	default <T extends Element & Drawable & Selectable> T cookies$addDrawableChild(T drawableElement) {
+		throw new UnsupportedOperationException();
+	}
+
+	static <T extends Element & Drawable & Selectable> T addDrawableChild(Screen screen, T drawableElement) {
+		return ((InventoryScreenAccessor) screen).cookies$addDrawableChild(drawableElement);
+	}
+
+	enum Disabled {
+		CRAFT_HELPER;
+	}
 }

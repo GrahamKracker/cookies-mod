@@ -3,17 +3,16 @@ package codes.cookies.mod.data.profile.sub;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import com.mojang.serialization.Codec;
-import codes.cookies.mod.features.misc.utils.crafthelper.CraftHelperInstance;
-import codes.cookies.mod.features.misc.utils.crafthelper.CraftHelperManager;
+import codes.cookies.mod.features.crafthelper.CraftHelperItem;
 import codes.cookies.mod.utils.json.CodecJsonSerializable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CraftHelperData implements CodecJsonSerializable<CraftHelperInstance> {
+//todo
+public class CraftHelperData { /*implements CodecJsonSerializable<CraftHelperInstance> {
 
 	public CraftHelperData() {
-		CraftHelperManager.remove();
+		CraftHelperManager.setActive(CraftHelperInstance.EMPTY);
 	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CraftHelperData.class);
@@ -25,7 +24,8 @@ public class CraftHelperData implements CodecJsonSerializable<CraftHelperInstanc
 
 	@Override
 	public void load(CraftHelperInstance value) {
-		CraftHelperManager.setActive(value);
+		codes.cookies.mod.features.misc.utils.crafthelper.CraftHelperManager.setActive(value);
+		codes.cookies.mod.features.crafthelper.CraftHelperManager.pushNewCraftHelperItem(new CraftHelperItem(value.getRepositoryItem()));
 	}
 
 	@Override
@@ -38,5 +38,5 @@ public class CraftHelperData implements CodecJsonSerializable<CraftHelperInstanc
 	@Override
 	public Logger getLogger() {
 		return LOGGER;
-	}
+	}*/
 }

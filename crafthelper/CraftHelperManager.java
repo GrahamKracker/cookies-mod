@@ -6,12 +6,14 @@ import java.util.function.Predicate;
 
 import codes.cookies.mod.config.ConfigManager;
 import codes.cookies.mod.events.api.ScreenKeyEvents;
+import codes.cookies.mod.features.crafthelper.CraftHelperLocation;
 import codes.cookies.mod.repository.RepositoryItem;
 import codes.cookies.mod.utils.SkyblockUtils;
 import codes.cookies.mod.utils.accessors.InventoryScreenAccessor;
 import codes.cookies.mod.utils.compatibility.legendarytooltips.LegendaryTooltips;
 import lombok.Getter;
 import lombok.Setter;
+
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2ic;
 
@@ -29,12 +31,13 @@ public class CraftHelperManager {
 	@NotNull
 	@Getter
 	private static CraftHelperInstance active = CraftHelperInstance.EMPTY;
-	private static CraftHelperLocation location;
+	public static CraftHelperLocation location;
 
 	public static void init() {
 		location = ConfigManager.getConfig().helpersConfig.craftHelper.craftHelperLocation.getValue();
 		ConfigManager.getConfig().helpersConfig.craftHelper.craftHelperLocation.withCallback((oldValue, newValue) -> location = newValue);
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+			active = CraftHelperInstance.EMPTY;
 			if (!(screen instanceof InventoryScreenAccessor)) {
 				return;
 			}
@@ -48,16 +51,16 @@ public class CraftHelperManager {
 				active.recalculate();
 			}
 
-			ScreenEvents.afterRender(screen).register(CraftHelperListener::onRender);
+			/*ScreenEvents.afterRender(screen).register(CraftHelperListener::onRender);
 			ScreenMouseEvents.allowMouseClick(screen).register(CraftHelperListener::onMouseClick);
 			ScreenMouseEvents.allowMouseScroll(screen).register(CraftHelperListener::onMouseScroll);
 			ScreenKeyboardEvents.allowKeyPress(screen).register(CraftHelperListener::onKeyPressed);
 			ScreenKeyboardEvents.allowKeyRelease(screen).register(CraftHelperListener::onKeyReleased);
-			ScreenKeyEvents.getExtension(screen).cookies$allowCharTyped().register(CraftHelperListener::onCharTyped);
+			ScreenKeyEvents.getExtension(screen).cookies$allowCharTyped().register(CraftHelperListener::onCharTyped);*/
 		});
 	}
 
-	public static void pushNewCraftHelperItem(RepositoryItem repositoryItem, int amount) {
+	/*public static void pushNewCraftHelperItem(RepositoryItem repositoryItem, int amount) {
 		active = new CraftHelperInstance(repositoryItem, amount, new ArrayList<>());
 		active.recalculate();
 	}
@@ -72,8 +75,6 @@ public class CraftHelperManager {
 		private static int calculateX(Screen screen) {
 			return switch (CraftHelperManager.location) {
 				case LEFT -> 0;
-				case LEFT_INVENTORY -> InventoryScreenAccessor.getX(screen) - 1;
-				case RIGHT_INVENTORY -> InventoryScreenAccessor.getX(screen) + 1;
 				case RIGHT -> screen.width;
 			};
 		}
@@ -154,5 +155,5 @@ public class CraftHelperManager {
 			return getCurrent().map(instance -> !instance.onCharTyped(chr, modifiers)).orElse(true);
 		}
 	}
-
+*/
 }

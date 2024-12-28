@@ -7,7 +7,7 @@ import codes.cookies.mod.data.profile.items.ItemCompound;
 import codes.cookies.mod.data.profile.items.ItemSources;
 import codes.cookies.mod.data.profile.items.sources.CraftableItemSource;
 import codes.cookies.mod.data.profile.items.sources.StorageItemSource;
-import codes.cookies.mod.features.misc.utils.crafthelper.CraftHelperManager;
+import codes.cookies.mod.features.crafthelper.CraftHelperManager;
 import codes.cookies.mod.repository.RepositoryItem;
 import codes.cookies.mod.services.item.search.ExactItemMatch;
 import codes.cookies.mod.services.item.search.IsSameMatch;

@@ -7,6 +7,8 @@ import codes.cookies.mod.screen.CookiesScreen;
 import codes.cookies.mod.utils.accessors.ClickEventAccessor;
 import codes.cookies.mod.utils.accessors.HoverEventAccessor;
 
+import codes.cookies.mod.utils.cookies.CookiesUtils;
+
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.tooltip.HoveredTooltipPositioner;
@@ -43,49 +45,30 @@ public class TextComponent extends CraftHelperComponent {
 			return;
 		}
 
-		if (CookiesScreen.isInBound(mouseX, mouseY, x + (x - mouseX), y, width, height)) {
-			if (GLFW.glfwGetMouseButton(MinecraftClient.getInstance().getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS && styleAt.getClickEvent() != null) {
-				final Optional<Runnable> runnable = ClickEventAccessor.getRunnable(styleAt.getClickEvent());
-				if (runnable.isPresent()) {
-					runnable.ifPresent(Runnable::run);
-				}
-			}
-			if (styleAt.getHoverEvent() != null) {
-				final Optional<List<Text>> hoverText = HoverEventAccessor.getText(styleAt.getHoverEvent());
-				hoverText.ifPresent(texts -> context.drawTooltip(
-						MinecraftClient.getInstance().textRenderer,
-						texts.stream().map(Text::asOrderedText).toList(),
-						HoveredTooltipPositioner.INSTANCE,
-						mouseX,
-						mouseY));
-			}
+		if (CookiesScreen.isInBound(mouseX, mouseY, x + (x - mouseX), y, width * 2, height)) {
+			context.drawHoverEvent(MinecraftClient.getInstance().textRenderer, styleAt, mouseX, mouseY);
 		}
 
 	}
 
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
-		/*final Style styleAt = MinecraftClient.getInstance().textRenderer.getTextHandler()
+		final Style styleAt = MinecraftClient.getInstance().textRenderer.getTextHandler()
 				.getStyleAt(text, (int) (x - mouseX));
 
-		LogUtils.getLogger().error("mouseClicked: " + (int) (x - mouseX));
-
 		if (styleAt == null || styleAt.isEmpty()) {
-			LogUtils.getLogger().error("mouseClicked empty");
 			return super.mouseClicked(mouseX, mouseY, button);
 		}
 
 		if (styleAt.getClickEvent() != null) {
-			LogUtils.getLogger().error("mouseClicked");
-			if (CookiesScreen.isInBound((int) mouseX, (int) mouseY, (int) (x + (x - mouseX)), y, width, height)) {
-				//if (CookiesScreen.isInBound((int) mouseX, (int) mouseY, x, y, width, height)) {
+			if (CookiesScreen.isInBound((int) mouseX, (int) mouseY, (int) (x + (x - mouseX)), y, width * 2, height)) {
 				final Optional<Runnable> runnable = ClickEventAccessor.getRunnable(styleAt.getClickEvent());
 				if (runnable.isPresent()) {
 					runnable.ifPresent(Runnable::run);
 					return true;
 				}
 			}
-		}*/ //todo ???
+		}
 
 		return super.mouseClicked(mouseX, mouseY, button);
 	}

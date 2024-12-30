@@ -14,6 +14,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ContainerWidget;
+import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -22,12 +23,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CraftHelperPanelLine extends ContainerWidget {
-
-	public CraftHelperPanelLine withHeight(int height) {
-		this.height = height;
-		return this;
-	}
-
 	public static CraftHelperPanelLine createHeader(CraftHelperItem item, CraftHelperPanelLine line, CraftHelperPanel parent) {
 		var stack = item.getRepositoryItem().constructItemStack();
 		line.addChildren(new ItemStackComponent(stack).withRightOffset(5));
@@ -38,7 +33,7 @@ public class CraftHelperPanelLine extends ContainerWidget {
 		var centerGroup = new GroupedComponent(moveLeftComponent, scrollableNameComponent, moveRightComponent);
 		line.addChildren(centerGroup);
 
-		centerGroup.setLeftOffset(((parent.getWidth() - centerGroup.getWidth()) / 2) - centerGroup.x);
+		centerGroup.setLeftOffset(((parent.getWidth() - centerGroup.width) / 2) - centerGroup.x - 15);
 		line.updateChildren();
 
 
@@ -48,14 +43,13 @@ public class CraftHelperPanelLine extends ContainerWidget {
 						return;
 					}
 
-					MinecraftClient.getInstance().setScreenAndRender(new CraftHelperPlacementScreen());
+					MinecraftClient.getInstance().setScreen(new CraftHelperPlacementScreen());
 				})
-				.onHover(List.of(Text.literal("Click to move").formatted(Formatting.AQUA)))
-				.formatted(Formatting.AQUA).build());
+				.formatted(Formatting.AQUA).build().styled(style -> style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to move").formatted(Formatting.AQUA)))));
 
 		var closeButton = new TextComponent(new TextBuilder(Constants.Emojis.NO).formatted(Formatting.RED, Formatting.BOLD)
 				.setRunnable(CraftHelperManager::close)
-				.onHover(List.of(Text.literal("Close").formatted(Formatting.RED)))
+				.onHover(Text.literal("Close").formatted(Formatting.RED))
 				.build()).withLeftOffset(2);
 		var rightGroup = new GroupedComponent(moveButton, closeButton);
 
@@ -76,17 +70,17 @@ public class CraftHelperPanelLine extends ContainerWidget {
 	@Override
 	protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
 		updateChildren();
-		children.forEach(component -> {
-			component.render(context, mouseX, mouseY, delta);
+		children.forEach(child -> {
+			child.render(context, mouseX, mouseY, delta);
 		});
 	}
 
 	private void updateChildren() {
 		AtomicInteger xOffset = new AtomicInteger(getX());
-		children.forEach(component -> {
-			component.setX(xOffset.addAndGet(component.getLeftOffset()));
-			xOffset.addAndGet(component.getWidth() - component.getLeftOffset());
-			component.setY(this.getY());
+		children.forEach(child -> {
+			child.setX(xOffset.addAndGet(child.getLeftOffset()));
+			xOffset.addAndGet(child.getWidth() - child.getLeftOffset());
+			child.setY(this.getY());
 		});
 		this.height = this.children.stream().mapToInt(CraftHelperComponent::getHeight).max().orElse(0);
 		this.width = this.children.stream().mapToInt(CraftHelperComponent::getWidth).sum();

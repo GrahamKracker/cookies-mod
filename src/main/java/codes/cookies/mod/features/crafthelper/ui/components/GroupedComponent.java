@@ -12,10 +12,11 @@ import java.util.List;
 
 public class GroupedComponent extends CraftHelperComponent {
 
-	protected final List<CraftHelperComponent> children = new ArrayList<>();
+	private final List<CraftHelperComponent> children = new ArrayList<>();
 
 	public GroupedComponent(CraftHelperComponent... children) {
 		super(0, 0);
+
 		this.children.addAll(List.of(children));
 		this.recalculate();
 	}
@@ -23,7 +24,8 @@ public class GroupedComponent extends CraftHelperComponent {
 	protected void recalculate() {
 		this.width = children.stream().mapToInt(CraftHelperComponent::getWidth).sum();
 		this.height = children.stream().mapToInt(CraftHelperComponent::getHeight).max().orElse(0);
-		
+		this.rightOffset = children.stream().mapToInt(CraftHelperComponent::getRightOffset).sum();
+		this.leftOffset = children.stream().mapToInt(CraftHelperComponent::getLeftOffset).sum();
 	}
 
 	public void add(CraftHelperComponent... component) {

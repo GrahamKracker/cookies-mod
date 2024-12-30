@@ -1,23 +1,13 @@
 package codes.cookies.mod.features.crafthelper;
 
-import codes.cookies.mod.config.data.ListData;
-import codes.cookies.mod.features.crafthelper.ui.CraftHelperComponent;
-import codes.cookies.mod.features.crafthelper.ui.CraftHelperPanelLine;
-import codes.cookies.mod.features.crafthelper.ui.components.RecipeComponent;
-import codes.cookies.mod.features.crafthelper.ui.components.TextComponent;
+import codes.cookies.mod.features.crafthelper.ui.RecipeListLine;
 import codes.cookies.mod.repository.Ingredient;
 import codes.cookies.mod.repository.RepositoryItem;
 import codes.cookies.mod.repository.recipes.calculations.RecipeCalculationResult;
 import codes.cookies.mod.repository.recipes.calculations.RecipeCalculator;
-import codes.cookies.mod.repository.recipes.calculations.RecipePrinter;
-import codes.cookies.mod.repository.recipes.calculations.RecipeResult;
-import codes.cookies.mod.utils.cookies.Constants;
 import codes.cookies.mod.utils.cookies.CookiesUtils;
 
-import codes.cookies.mod.utils.minecraft.TextBuilder;
 import lombok.Getter;
-
-import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +24,8 @@ public class CraftHelperItem {
 	final RepositoryItem repositoryItem;
 	private final int amount;
 	private boolean recalculated = false;
-	private final List<CraftHelperPanelLine> lines = new ArrayList<>();
+	private final List<RecipeListLine> recipeLines = new ArrayList<>();
+
 
 	public CraftHelperItem(RepositoryItem repositoryItem, int amount) {
 		this.repositoryItem = repositoryItem;
@@ -55,19 +46,19 @@ public class CraftHelperItem {
 	}
 
 	private void finishRecalculation(RecipeCalculationResult recipeCalculationResult) {
-		lines.clear();
-		lines.add(new CraftHelperPanelLine(new RecipeComponent(recipeCalculationResult, 0)));
+		recipeCalculationResult = recipeCalculationResult.multiply(amount);
+		addSubRecipe(recipeCalculationResult, null, 0);
 	}
 
-	private void getRecipe(RecipeResult<?> calculationResult, int depth) {
-
-		if (calculationResult instanceof RecipeCalculationResult subResult) {
-			//lines.add(new CraftHelperPanelLine(new RecipeComponent(subResult, depth)));
-			subResult.getRequired().forEach(recipeResult -> {
-				getRecipe(recipeResult, depth + 1);
-			});
-		} else if (calculationResult instanceof Ingredient ingredient) {
-			//lines.add(new CraftHelperPanelLine(new IngredientComponent(ingredient, depth)));
-		}
+	private void addSubRecipe(RecipeCalculationResult subRecipe, RecipeListLine parent, int depth) {
+		var recipeLine = new RecipeListLine(parent, depth, subRecipe.getIngredient());
+		recipeLines.add(recipeLine);
+		subRecipe.getRequired().forEach(recipeResult -> {
+			if (recipeResult instanceof RecipeCalculationResult subRecipe2) {
+				addSubRecipe(subRecipe2, recipeLine, depth + 1);
+			} else if (recipeResult instanceof Ingredient ingredient) {
+				recipeLines.add(new RecipeListLine(recipeLine, depth + 1, ingredient));
+			}
+		});
 	}
 }

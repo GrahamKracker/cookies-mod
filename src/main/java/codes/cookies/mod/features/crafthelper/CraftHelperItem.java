@@ -11,10 +11,12 @@ import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Getter
 public class CraftHelperItem {
+
 	/*public static final Codec<CraftHelperInstance> CODEC = RecordCodecBuilder.create(instance -> instance.group(
 					RepositoryItem.ID_CODEC.fieldOf("id").forGetter(CraftHelperInstance::getRepositoryItem),
 					Codecs.NON_NEGATIVE_INT.fieldOf("amount").forGetter(CraftHelperInstance::getAmount),
@@ -46,18 +48,17 @@ public class CraftHelperItem {
 	}
 
 	private void finishRecalculation(RecipeCalculationResult recipeCalculationResult) {
-		recipeCalculationResult = recipeCalculationResult.multiply(amount);
-		addSubRecipe(recipeCalculationResult, null, 0);
+		addSubRecipe(recipeCalculationResult, null, 0, recipeCalculationResult);
 	}
 
-	private void addSubRecipe(RecipeCalculationResult subRecipe, RecipeListLine parent, int depth) {
-		var recipeLine = new RecipeListLine(parent, depth, subRecipe.getIngredient());
+	private void addSubRecipe(RecipeCalculationResult subRecipe, RecipeListLine parent, int depth, RecipeCalculationResult topRecipe) {
+		var recipeLine = new RecipeListLine(parent, depth, subRecipe.getIngredient(), amount);
 		recipeLines.add(recipeLine);
 		subRecipe.getRequired().forEach(recipeResult -> {
 			if (recipeResult instanceof RecipeCalculationResult subRecipe2) {
-				addSubRecipe(subRecipe2, recipeLine, depth + 1);
+				addSubRecipe(subRecipe2, recipeLine, depth + 1, topRecipe);
 			} else if (recipeResult instanceof Ingredient ingredient) {
-				recipeLines.add(new RecipeListLine(recipeLine, depth + 1, ingredient));
+				recipeLines.add(new RecipeListLine(recipeLine, depth + 1, ingredient, amount));
 			}
 		});
 	}

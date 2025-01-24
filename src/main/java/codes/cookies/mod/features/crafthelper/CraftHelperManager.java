@@ -1,16 +1,15 @@
 package codes.cookies.mod.features.crafthelper;
 
-import codes.cookies.mod.CookiesMod;
 import codes.cookies.mod.config.ConfigManager;
 import codes.cookies.mod.events.api.ScreenKeyEvents;
 import codes.cookies.mod.features.crafthelper.ui.CraftHelperPanel;
 import codes.cookies.mod.features.crafthelper.ui.CraftHelperPanelLine;
-import codes.cookies.mod.features.crafthelper.ui.RecipeListLine;
 import codes.cookies.mod.repository.RepositoryItem;
 import codes.cookies.mod.utils.SkyblockUtils;
 import codes.cookies.mod.utils.accessors.InventoryScreenAccessor;
 
 import codes.cookies.mod.utils.cookies.CookiesUtils;
+import com.mojang.logging.LogUtils;
 import lombok.Getter;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -21,24 +20,37 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2i;
 import org.joml.Vector2ic;
 
+import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
-import java.util.Stack;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 public class CraftHelperManager {
-	@Getter
-	private static final Stack<CraftHelperItem> items = new Stack<>();
+	private static int currentItemIndex = 0;
+
+	@Nullable
+	public static CraftHelperItem getCurrentItem() {
+		if (items.isEmpty()) {
+			return null;
+		}
+
+		return items.get(currentItemIndex);
+	}
+
+	private static final ArrayList<CraftHelperItem> items = new ArrayList<>();
+
 	@Getter
 	private static CraftHelperLocation location;
 
 	private static WeakReference<CraftHelperPanel> panelRef = new WeakReference<>(null);
 
 	public static void init() {
+		AtomicInteger ticksSinceLastUpdate = new AtomicInteger(0);
 		location = ConfigManager.getConfig().helpersConfig.craftHelper.craftHelperLocation.getValue();
 		ConfigManager.getConfig().helpersConfig.craftHelper.craftHelperLocation.withCallback((oldValue, newValue) -> location = newValue);
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
@@ -55,50 +67,53 @@ public class CraftHelperManager {
 
 			if (items.isEmpty()) {
 				//return;
-				items.push(new CraftHelperItem(RepositoryItem.of("WAND_OF_RESTORATION"), 2)); //WAND_OF_RESTORATION
+				items.add(new CraftHelperItem(RepositoryItem.of("TITANIUM_DRILL_3"), 1)); //WAND_OF_RESTORATION
 			}
 
-			var panel = inventoryScreenAccessor.cookies$addDrawableChild(new CraftHelperPanel((screen.height - 166), calculateWidth(inventoryScreenAccessor)));
-			for (var line : items.peek().getRecipeLines()) {
+			var panel = screen.addDrawableChild(new CraftHelperPanel(calculateWidth(inventoryScreenAccessor)));
+			for (var line : items.getFirst().getRecipeLines()) {
 				panel.addLine(line);
 			}
 			panelRef = new WeakReference<>(panel);
 
 			for (CraftHelperPanelLine line : panel.getLines()) {
-				if (line instanceof RecipeListLine recipeListLine) {
-					recipeListLine.update();
-				}
+				line.update();
 			}
 
-			ScreenEvents.beforeRender(screen).register((screen1, drawContext, i, i1, v) -> onRender(inventoryScreenAccessor, panel, i, i1, v));
+			ScreenEvents.beforeRender(screen).register((screen1, drawContext, i, i1, v) -> {
+				var panel1 = panelRef.get();
+				if (panel1 == null) {
+					return;
+				}
+
+				panel1.setWidth(calculateWidth(inventoryScreenAccessor));
+				var position = getPosition(inventoryScreenAccessor, panel1);
+				panel1.setX(position.x());
+				panel1.setY(position.y());
+			});
+
 			ScreenMouseEvents.allowMouseClick(screen).register(CraftHelperManager::onMouseClick);
 			ScreenMouseEvents.allowMouseScroll(screen).register(CraftHelperManager::onMouseScroll);
 			ScreenKeyboardEvents.allowKeyPress(screen).register(CraftHelperManager::onKeyPressed);
 			ScreenKeyboardEvents.allowKeyRelease(screen).register(CraftHelperManager::onKeyReleased);
 			ScreenKeyEvents.getExtension(screen).cookies$allowCharTyped().register(CraftHelperManager::onCharTyped);
+			
+			ScreenEvents.afterTick(screen).register((screen1) -> {
+				if (ticksSinceLastUpdate.getAndIncrement() > 60) {
+					panel.getLines().forEach(CraftHelperPanelLine::update);
+					ticksSinceLastUpdate.set(0);
+				}
+			});
+
 			items.clear();
 		});
 
-		AtomicInteger ticksSinceLastUpdate = new AtomicInteger(0);
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			var panel = panelRef.get();
-			if (panel == null || ticksSinceLastUpdate.getAndIncrement() < 40) {
-				return;
+			if (panel != null) {
+				LogUtils.getLogger().warn("Panel is not null");
 			}
-			ticksSinceLastUpdate.set(0);
-			panel.children().forEach(child -> {
-				if (child instanceof RecipeListLine recipeListLine) {
-					recipeListLine.update();
-				}
-			});
 		});
-	}
-
-	public static void onRender(InventoryScreenAccessor inventoryScreenAccessor, CraftHelperPanel panel, int i, int i1, float v) {
-		panel.setWidth(calculateWidth(inventoryScreenAccessor));
-		var position = getPosition(inventoryScreenAccessor, panel);
-		panel.setX(position.x());
-		panel.setY(position.y());
 	}
 
 	private static int calculateRightEdge(InventoryScreenAccessor screen) {
@@ -158,12 +173,21 @@ public class CraftHelperManager {
 	}
 
 	public static void pushNewCraftHelperItem(CraftHelperItem item) {
-		items.push(item);
+		items.addFirst(item);
 	}
 
 	public static void pushNewCraftHelperItem(RepositoryItem repositoryItemNotNull, int i) {
-		//todo just cause im lazy
+		items.addFirst(new CraftHelperItem(repositoryItemNotNull, i));
 	}
+
+	public static void popCraftHelperItem() {
+		items.removeFirst();
+	}
+
+	public static void popCraftHelperItem(int i) {
+		items.remove(i);
+	}
+
 
 	public static void close() {
 	}

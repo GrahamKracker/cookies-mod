@@ -60,7 +60,7 @@ public abstract class HudElement {
 	protected void addBasicSetting(HudElementSettingBuilder builder) {
 		builder.prependSetting(new EnumCycleSetting<>(
 				Text.literal("Alignment"),
-				Text.literal(""),
+				Text.empty(),
 				this.position::getAlignment,
 				this.position::setAlignment,
 				HudElementSettingType.METADATA));

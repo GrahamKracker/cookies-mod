@@ -12,6 +12,5 @@ public class SpacerComponent extends CraftHelperComponent {
 
 	@Override
 	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-
 	}
 }

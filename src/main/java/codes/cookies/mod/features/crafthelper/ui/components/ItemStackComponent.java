@@ -28,7 +28,6 @@ public class ItemStackComponent extends CraftHelperComponent {
 		context.getMatrices().push();
 		context.getMatrices().translate(0, 0, -100);
 		context.drawItem(stack, x + 5, y + 5, (int) System.currentTimeMillis());
-		context.drawStackOverlay(textRenderer, stack, x + 1, y + 1);
 		if (CookiesScreen.isInBound(mouseX, mouseY, x, y, 26, 26)) {
 			context.drawItemTooltip(textRenderer, stack, mouseX, mouseY);
 		}

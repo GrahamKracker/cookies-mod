@@ -1,15 +1,18 @@
 package codes.cookies.mod.features.crafthelper.ui;
 
-import codes.cookies.mod.CookiesMod;
 import codes.cookies.mod.features.crafthelper.CraftHelperItem;
 
 import codes.cookies.mod.features.crafthelper.CraftHelperManager;
 
+import codes.cookies.mod.features.crafthelper.CraftHelperPlacementScreen;
+import codes.cookies.mod.features.crafthelper.ui.components.GroupedComponent;
+import codes.cookies.mod.features.crafthelper.ui.components.ItemStackComponent;
+import codes.cookies.mod.features.crafthelper.ui.components.ScrollableTextComponent;
 import codes.cookies.mod.features.crafthelper.ui.components.SpacerComponent;
+
 import codes.cookies.mod.features.crafthelper.ui.components.TextComponent;
-
-import codes.cookies.mod.utils.cookies.CookiesUtils;
-
+import codes.cookies.mod.utils.cookies.Constants;
+import codes.cookies.mod.utils.minecraft.TextBuilder;
 import lombok.Getter;
 
 import net.minecraft.client.MinecraftClient;
@@ -17,15 +20,15 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.tooltip.TooltipPositioner;
 import net.minecraft.client.gui.widget.ContainerWidget;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CraftHelperPanel extends ContainerWidget implements Element, Selectable {
@@ -38,21 +41,19 @@ public class CraftHelperPanel extends ContainerWidget implements Element, Select
 
 	private boolean focused;
 
-	public CraftHelperPanel(int height, int width) {
-		super(0, 0, width, height, Text.of(""));
-		createWidgets(CraftHelperManager.getItems().peek());
-	}
+	public CraftHelperPanel(int width) {
+		super(0, 0, width, 0, Text.of(""));
+		var item = CraftHelperManager.getCurrentItem();
+		if (item != null) {
+			createHeader(item);
 
-	public void createWidgets(CraftHelperItem item) {
-		lines.clear();
-		addLine(CraftHelperPanelLine.createHeader(item, new CraftHelperPanelLine(), this));
-
-		addLine(Spacer);
+			addLine(Spacer);
+		}
 	}
 
 	public void addLine(CraftHelperPanelLine line) {
 		lines.add(line);
-		this.height = 14 + lines.stream().mapToInt(CraftHelperPanelLine::getHeight).sum() + 14;
+		line.setWidth(this.width);
 	}
 
 	@Override
@@ -69,23 +70,27 @@ public class CraftHelperPanel extends ContainerWidget implements Element, Select
 		totalHeight += 14;
 
 		context.getMatrices().push();
-		context.getMatrices().translate(0, 0, 100);
-		context.drawGuiTexture(RenderLayer::getGuiTextured, Identifier.ofVanilla("tooltip/background"), getX(), getY(), this.width, totalHeight);
-		context.drawGuiTexture(RenderLayer::getGuiTextured, Identifier.ofVanilla("tooltip/frame"), getX(), getY(), this.width, totalHeight);
-		context.getMatrices().pop();
+		{
+			context.getMatrices().translate(0, 0, 400);
+			context.drawGuiTexture(RenderLayer::getGuiTextured, Identifier.ofVanilla("tooltip/background"), getX(), getY(), this.width, totalHeight);
+			context.drawGuiTexture(RenderLayer::getGuiTextured, Identifier.ofVanilla("tooltip/frame"), getX(), getY(), this.width, totalHeight);
 
-		context.getMatrices().push();
-		context.getMatrices().translate(0, 0, 200);
+			context.getMatrices().push();
+			{
+				context.getMatrices().translate(0, 0, 200);
 
-		AtomicInteger widgetY = new AtomicInteger(getY() + 14);
-		lines.forEach(line -> {
-			line.setX(this.getX() + 15);
-			line.setY(widgetY.getAndAdd(line.getHeight() + 1));
-			line.setWidth(this.width);
-			line.render(context, mouseX, mouseY, delta);
-		});
+				AtomicInteger widgetY = new AtomicInteger(getY() + 14);
+				for (CraftHelperPanelLine line : lines) {
+					line.setX(this.getX() + 15);
+					var lineHeight = line.getHeight();
+					line.setY(widgetY.getAndAdd(lineHeight == 0 ? 0 : lineHeight + 1));
+					line.renderWidget(context, mouseX, mouseY, delta);
+				}
 
-		context.getMatrices().pop();
+				context.getMatrices().pop();
+			}
+			context.getMatrices().pop();
+		}
 	}
 
 	@Override
@@ -133,5 +138,45 @@ public class CraftHelperPanel extends ContainerWidget implements Element, Select
 
 		scrollDelta += 2 * (int) verticalAmount;
 		return true;
+	}
+
+	public void createHeader(CraftHelperItem item) {
+		var line = new CraftHelperPanelLine();
+
+		var stack = item.getRepositoryItem().constructItemStack();
+
+		line.addChildren(new ItemStackComponent(stack).withRightOffset(5));
+
+		var moveLeftComponent = new TextComponent(new TextBuilder("<").build()).withRightOffset(5);
+
+		var scrollableNameComponent = new ScrollableTextComponent(Text.of(item.getRepositoryItem().getFormattedName()), 95).withRightOffset(5);
+		var moveRightComponent = new TextComponent(new TextBuilder(">").build());
+		var centerGroup = new GroupedComponent(moveLeftComponent, scrollableNameComponent, moveRightComponent);
+		line.addChildren(centerGroup);
+
+		centerGroup.setLeftOffset(((this.getWidth() - centerGroup.width) / 2) - centerGroup.x - 15);
+		line.updateChildren();
+
+		var moveButton = new TextComponent(new TextBuilder(Constants.Emojis.MOVE)
+				.setRunnable(() -> {
+					if (MinecraftClient.getInstance().currentScreen instanceof CraftHelperPlacementScreen) {
+						return;
+					}
+
+					MinecraftClient.getInstance().setScreen(new CraftHelperPlacementScreen());
+				})
+				.formatted(Formatting.AQUA).build().styled(style -> style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to move").formatted(Formatting.AQUA)))));
+
+		var closeButton = new TextComponent(new TextBuilder(Constants.Emojis.NO).formatted(Formatting.RED, Formatting.BOLD)
+				.setRunnable(CraftHelperManager::close)
+				.onHover(Text.literal("Click to hide").formatted(Formatting.RED))
+				.build()).withLeftOffset(4);
+		var rightGroup = new GroupedComponent(moveButton, closeButton);
+
+		line.addChildren(rightGroup);
+		rightGroup.setLeftOffset(this.getWidth() - line.getWidth() - rightGroup.width - 20);
+		line.updateChildren();
+
+		addLine(line);
 	}
 }

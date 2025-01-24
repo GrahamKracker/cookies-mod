@@ -32,8 +32,8 @@ public class CraftHelperPlacementScreen extends ClientSideInventory {
 
 	@Override
 	public void tick() {
-		if (CraftHelperManager.getItems().isEmpty() && !isClosed) {
-			CraftHelperManager.getItems().push(defaultInstance);
+		if (CraftHelperManager.getCurrentItem() == null && !isClosed) {
+			CraftHelperManager.pushNewCraftHelperItem(defaultInstance);
 			removeItemAfterwards = true;
 			//if (!defaultInstance.isHasCalculated()) {
 			defaultInstance.recalculate();
@@ -87,7 +87,7 @@ public class CraftHelperPlacementScreen extends ClientSideInventory {
 		super.close();
 		isClosed = true;
 		if (this.removeItemAfterwards) {
-			CraftHelperManager.getItems().pop();
+			CraftHelperManager.popCraftHelperItem();
 		}
 		ConfigManager.saveConfig(true, "edit-craft-helper-location");
 	}

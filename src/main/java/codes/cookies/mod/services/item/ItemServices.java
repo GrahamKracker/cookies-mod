@@ -188,7 +188,7 @@ public class ItemServices {
 				tooltip.add(Text.literal("(Right-click to find items marked with " + Constants.Emojis.WARNING + ")")
 						.formatted(Formatting.DARK_GRAY));
 			}
-			MutableText bar = Text.literal("").formatted(Formatting.STRIKETHROUGH, Formatting.GRAY);
+			MutableText bar = Text.empty().formatted(Formatting.STRIKETHROUGH, Formatting.GRAY);
 			tooltip.add(bar);
 			int maxWidth = 0;
 			for (Map.Entry<Ingredient, CraftableItemSource.IngredientData> entry : data.amounts().entrySet()) {

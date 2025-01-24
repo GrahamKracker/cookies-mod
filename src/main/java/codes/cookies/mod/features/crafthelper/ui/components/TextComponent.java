@@ -5,25 +5,25 @@ import codes.cookies.mod.features.crafthelper.ui.CraftHelperComponent;
 import codes.cookies.mod.screen.CookiesScreen;
 
 import codes.cookies.mod.utils.accessors.ClickEventAccessor;
-import codes.cookies.mod.utils.accessors.HoverEventAccessor;
-
-import codes.cookies.mod.utils.cookies.CookiesUtils;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.tooltip.HoveredTooltipPositioner;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 
-import org.lwjgl.glfw.GLFW;
-
-import java.util.List;
 import java.util.Optional;
 
 public class TextComponent extends CraftHelperComponent {
-	protected OrderedText text;
+	private OrderedText text;
+
+	protected void setText(OrderedText text, boolean updateWidth) {
+		this.text = text;
+		if (updateWidth) {
+			this.width = getTextRenderer().getWidth(text);
+		}
+	}
 
 	public TextComponent(Text text) {
 		super(getTextRenderer().getWidth(text), MinecraftClient.getInstance().textRenderer.fontHeight);
@@ -48,7 +48,6 @@ public class TextComponent extends CraftHelperComponent {
 		if (CookiesScreen.isInBound(mouseX, mouseY, x + (x - mouseX), y, width * 2, height)) {
 			context.drawHoverEvent(MinecraftClient.getInstance().textRenderer, styleAt, mouseX, mouseY);
 		}
-
 	}
 
 	@Override

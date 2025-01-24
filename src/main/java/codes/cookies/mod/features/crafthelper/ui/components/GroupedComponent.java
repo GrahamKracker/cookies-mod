@@ -2,13 +2,12 @@ package codes.cookies.mod.features.crafthelper.ui.components;
 
 import codes.cookies.mod.features.crafthelper.ui.CraftHelperComponent;
 
-import com.mojang.logging.LogUtils;
-
 import net.minecraft.client.gui.DrawContext;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GroupedComponent extends CraftHelperComponent {
 
@@ -24,8 +23,8 @@ public class GroupedComponent extends CraftHelperComponent {
 	protected void recalculate() {
 		this.width = children.stream().mapToInt(CraftHelperComponent::getWidth).sum();
 		this.height = children.stream().mapToInt(CraftHelperComponent::getHeight).max().orElse(0);
-		this.rightOffset = children.stream().mapToInt(CraftHelperComponent::getRightOffset).sum();
-		this.leftOffset = children.stream().mapToInt(CraftHelperComponent::getLeftOffset).sum();
+		/*this.rightOffset = children.stream().mapToInt(CraftHelperComponent::getRightOffset).sum();
+		this.leftOffset = children.stream().mapToInt(CraftHelperComponent::getLeftOffset).sum();*/
 	}
 
 	public void add(CraftHelperComponent... component) {
@@ -39,6 +38,13 @@ public class GroupedComponent extends CraftHelperComponent {
 	}
 
 	@Override
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		AtomicBoolean clicked = new AtomicBoolean(false);
+		children.forEach(child -> clicked.set(clicked.get() | child.mouseClicked(mouseX, mouseY, button)));
+		return clicked.get();
+	}
+
+	@Override
 	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 		int x = getX();
 		for (CraftHelperComponent child : children) {
@@ -46,7 +52,7 @@ public class GroupedComponent extends CraftHelperComponent {
 			child.setX(x);
 			child.setY(getY());
 			child.render(context, mouseX, mouseY, delta);
-			x += child.getWidth() + child.getRightOffset() - child.getLeftOffset();
+			x += child.getWidth() - child.getLeftOffset();
 		}
 	}
 }

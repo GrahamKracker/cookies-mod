@@ -72,9 +72,4 @@ public abstract class CraftHelperComponent implements Element, Selectable, Drawa
 	@Override
 	public void appendNarrations(NarrationMessageBuilder builder) {
 	}
-
-	@Override
-	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-		return Element.super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
-	}
 }

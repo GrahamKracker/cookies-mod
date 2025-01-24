@@ -27,6 +27,7 @@ import org.joml.Vector2ic;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
@@ -47,13 +48,16 @@ public class CraftHelperManager {
 	@Getter
 	private static CraftHelperLocation location;
 
-	private static WeakReference<CraftHelperPanel> panelRef = new WeakReference<>(null);
+	private static CraftHelperPanel panel;
 
 	public static void init() {
 		AtomicInteger ticksSinceLastUpdate = new AtomicInteger(0);
 		location = ConfigManager.getConfig().helpersConfig.craftHelper.craftHelperLocation.getValue();
 		ConfigManager.getConfig().helpersConfig.craftHelper.craftHelperLocation.withCallback((oldValue, newValue) -> location = newValue);
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+			if(panel == null) {
+				panel = new CraftHelperPanel(0);
+			}
 			if (!(screen instanceof InventoryScreenAccessor inventoryScreenAccessor)) {
 				return;
 			}
@@ -65,31 +69,31 @@ public class CraftHelperManager {
 				return;
 			}
 
-			if (items.isEmpty()) {
-				//return;
-				items.add(new CraftHelperItem(RepositoryItem.of("TITANIUM_DRILL_3"), 1)); //WAND_OF_RESTORATION
+			var currentItem = getCurrentItem();
+
+			if (currentItem == null) {
+				pushNewCraftHelperItem(new CraftHelperItem(RepositoryItem.of("TITANIUM_DRILL_3"), 1)); //WAND_OF_RESTORATION
 			}
 
-			var panel = screen.addDrawableChild(new CraftHelperPanel(calculateWidth(inventoryScreenAccessor)));
-			for (var line : items.getFirst().getRecipeLines()) {
+			panel.getLines().clear();
+			panel.createHeader(currentItem);
+			panel.addLine(panel.Spacer);
+
+			screen.addDrawableChild(panel);
+
+			for (var line : currentItem.getRecipeLines()) {
 				panel.addLine(line);
 			}
-			panelRef = new WeakReference<>(panel);
 
 			for (CraftHelperPanelLine line : panel.getLines()) {
 				line.update();
 			}
 
 			ScreenEvents.beforeRender(screen).register((screen1, drawContext, i, i1, v) -> {
-				var panel1 = panelRef.get();
-				if (panel1 == null) {
-					return;
-				}
-
-				panel1.setWidth(calculateWidth(inventoryScreenAccessor));
-				var position = getPosition(inventoryScreenAccessor, panel1);
-				panel1.setX(position.x());
-				panel1.setY(position.y());
+				panel.setWidth(calculateWidth(inventoryScreenAccessor));
+				var position = getPosition(inventoryScreenAccessor, panel);
+				panel.setX(position.x());
+				panel.setY(position.y());
 			});
 
 			ScreenMouseEvents.allowMouseClick(screen).register(CraftHelperManager::onMouseClick);
@@ -105,14 +109,9 @@ public class CraftHelperManager {
 				}
 			});
 
-			items.clear();
-		});
-
-		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			var panel = panelRef.get();
-			if (panel != null) {
-				LogUtils.getLogger().warn("Panel is not null");
-			}
+			ScreenEvents.remove(screen).register((screen1) -> {
+				panel.children().clear();
+			});
 		});
 	}
 

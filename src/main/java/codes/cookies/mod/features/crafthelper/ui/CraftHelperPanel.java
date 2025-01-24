@@ -35,7 +35,7 @@ public class CraftHelperPanel extends ContainerWidget implements Element, Select
 	@Getter
 	private final List<CraftHelperPanelLine> lines = new ArrayList<>();
 
-	private final CraftHelperPanelLine Spacer = new CraftHelperPanelLine() {{
+	public final CraftHelperPanelLine Spacer = new CraftHelperPanelLine() {{
 		addChildren(new SpacerComponent(15, MinecraftClient.getInstance().textRenderer.fontHeight));
 	}};
 

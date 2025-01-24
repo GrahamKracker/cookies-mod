@@ -90,6 +90,7 @@ public class RecipeListLine extends CraftHelperPanelLine {
 		}
 
 		this.depth = depth;
+		addComponents();
 	}
 
 	private final CraftHelperComponent lineComponent = new CraftHelperComponent(1, 0) {
@@ -266,9 +267,10 @@ public class RecipeListLine extends CraftHelperPanelLine {
 
 	@Override
 	public void update() {
-		children().clear();
-		itemTracker = new ItemTracker(ItemSources.values());
-		addComponents();
+		//children().clear();
+		//itemTracker = new ItemTracker(ItemSources.values());
+		//addComponents();
+		//super.update();
 	}
 
 	private enum State {
@@ -334,7 +336,6 @@ public class RecipeListLine extends CraftHelperPanelLine {
 	}
 
 	private void onClick() {
-		CookiesUtils.sendMessage("t");
 		final RepositoryItem repositoryItem = this.ingredient.getRepositoryItem();
 		if (repositoryItem.getRecipes().stream().anyMatch(CraftRecipe.class::isInstance)) {
 			CookiesUtils.sendCommand("viewrecipe " + repositoryItem.getInternalId());

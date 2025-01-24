@@ -34,6 +34,7 @@ public class CraftHelperPanelLine extends ContainerWidget {
 
 	@Override
 	protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+		updateChildren();
 		for (CraftHelperComponent child : children) {
 			child.render(context, mouseX, mouseY, delta);
 		}

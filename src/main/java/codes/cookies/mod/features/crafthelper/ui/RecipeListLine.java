@@ -2,7 +2,6 @@ package codes.cookies.mod.features.crafthelper.ui;
 
 import codes.cookies.mod.CookiesMod;
 import codes.cookies.mod.data.profile.items.ItemSources;
-import codes.cookies.mod.data.profile.items.sources.ForgeItemSource;
 import codes.cookies.mod.features.crafthelper.ItemTracker;
 import codes.cookies.mod.features.crafthelper.ui.components.SpacerComponent;
 
@@ -16,36 +15,20 @@ import codes.cookies.mod.utils.ColorUtils;
 import codes.cookies.mod.utils.cookies.Constants;
 import codes.cookies.mod.utils.cookies.CookiesUtils;
 
-import codes.cookies.mod.utils.maths.MathUtils;
-import codes.cookies.mod.utils.minecraft.NonCacheMutableText;
-import codes.cookies.mod.utils.minecraft.SupplierTextContent;
 import codes.cookies.mod.utils.minecraft.TextBuilder;
-import codes.cookies.mod.utils.skyblock.ForgeUtils;
-import com.mojang.logging.LogUtils;
 import lombok.Setter;
-
-import lombok.extern.java.Log;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.client.gui.screen.recipebook.RecipeBookWidget;
-import net.minecraft.client.gui.widget.ToggleButtonWidget;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Pair;
-
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalLong;
-import java.util.function.Supplier;
 
 public class RecipeListLine extends CraftHelperPanelLine {
 	private final RecipeListLine parent;
@@ -53,21 +36,31 @@ public class RecipeListLine extends CraftHelperPanelLine {
 	protected final int depth;
 	@Setter
 	private boolean collapsed = false;
-	private final ItemTracker itemTracker = new ItemTracker(ItemSources.values());
+	private ItemTracker itemTracker = new ItemTracker(ItemSources.values()); //todo: rework item to be event-based and move the taking to a static map in here
 	private final Ingredient ingredient;
 	private boolean parentCollapsed;
+	private int amount;
 
 	public int getAmount() {
-		return Math.min(itemTracker.getAmount(ingredient.getRepositoryItem()), ingredient.getAmount());
+		return amount;
 	}
 
-	public int getTargetAmount() { //todo: have the parent amounts cascade down
-		return ingredient.getAmount();
+	public int getClampedAmount() {
+		return Math.min(getAmount(), getTargetAmount());
+	}
+
+	public int getTargetAmount() {
+		return ingredient.getAmount() - getAmountThroughParents();
+	}
+
+	public int getAmountThroughParents() {
+		return parent != null ? parent.getAmount() * (ingredient
+				.getAmount() / parent.ingredient.getAmount()) : 0;
 	}
 
 	@Override
 	protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-		if (this.getAmount() >= getTargetAmount()) {
+		if (getAmount() >= getTargetAmount()) {
 			this.collapsed = true;
 		}
 		if ((parent != null && (parent.collapsed || parent.parentCollapsed))) {
@@ -95,6 +88,7 @@ public class RecipeListLine extends CraftHelperPanelLine {
 		}
 
 		this.depth = depth;
+		amount = itemTracker.take(ingredient.getRepositoryItemNotNull(), getTargetAmount());
 		addComponents();
 	}
 
@@ -139,11 +133,11 @@ public class RecipeListLine extends CraftHelperPanelLine {
 	private void addComponents() {
 		this.addChildren(lineComponent, new SpacerComponent(depth * 8, 0));
 
-		var text = Text.empty().append(getIcon()).append(Text.literal(" " + getAmount() + "/" + getTargetAmount() + " ").withColor(getColor(getAmount(), getTargetAmount())).append(new TextBuilder(ingredient.getRepositoryItem().getFormattedName()).build()));
+		var text = Text.empty().append(getIcon()).append(Text.literal(" " + getClampedAmount() + "/" + getTargetAmount() + " ").withColor(getColor(getClampedAmount(), getTargetAmount())).append(new TextBuilder(ingredient.getRepositoryItem().getFormattedName()).build()));
 		this.addChildren(new TextComponent(new TextBuilder(text).setRunnable(this::onClick).build()));
 
 		this.addChildren(new SpacerComponent(5, 0));
-		
+
 		this.addChildren(new TextComponent("") {
 			public final Text unCollapsedText = new TextBuilder("▼  ").setRunnable(RecipeListLine.this::toggleCollapse)
 					.onHover(Text.empty().append(ingredient.getRepositoryItem().getFormattedName()).append("\nClick to collapse!")
@@ -173,10 +167,9 @@ public class RecipeListLine extends CraftHelperPanelLine {
 
 	@Override
 	public void update() {
-		//children().clear();
-		//itemTracker = new ItemTracker(ItemSources.values());
-		//addComponents();
-		//super.update();
+		children().clear();
+		addComponents();
+		super.update();
 	}
 
 	private enum State {
@@ -186,7 +179,7 @@ public class RecipeListLine extends CraftHelperPanelLine {
 	}
 
 	private State getState() {
-		if (this.getAmount() >= getTargetAmount()) {
+		if (getAmount() >= getTargetAmount()) {
 			return State.CRAFTED;
 		} else if (directChildren.isEmpty()) {
 			return State.NOT_CRAFTABLE;

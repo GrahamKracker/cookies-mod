@@ -41,15 +41,16 @@ public class CraftHelperPanel extends ContainerWidget implements Element, Select
 
 	private boolean focused;
 
-	public CraftHelperPanel(int width) {
+	public CraftHelperPanel(int width, CraftHelperItem item) {
 		super(0, 0, width, 0, Text.of(""));
-		init(CraftHelperManager.getCurrentItem());
+		init(item);
 	}
 
 	public void init(CraftHelperItem item) {
 		if (item == null) {
 			return;
 		}
+		item.recalculate();
 		lines.clear();
 		createHeader(item);
 		addLine(Spacer);

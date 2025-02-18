@@ -5,6 +5,7 @@ import codes.cookies.mod.data.profile.items.ItemSources;
 
 import codes.cookies.mod.data.profile.items.sources.ForgeItemSource;
 import codes.cookies.mod.repository.RepositoryItem;
+import com.mojang.logging.LogUtils;
 import it.unimi.dsi.fastutil.objects.ObjectIntPair;
 
 import lombok.Getter;
@@ -107,14 +108,12 @@ public class ItemTracker {
 		}
 
 		public int take(int max) {
+			LogUtils.getLogger().info("Taking " + max + " from " + repositoryItem.getFormattedName().getString() + " current amount is " + (amount - consumed));
+			consumed += max;
 			int remaining = amount - consumed;
-			if (remaining > max) {
-				consumed += max;
-				return max;
-			}
+			LogUtils.getLogger().info("Remaining: " + remaining);
 
-			consumed = amount;
-			return remaining;
+			return Math.max(0, remaining);
 		}
 
 		private int getAmountBefore(ItemSources source) {

@@ -45,7 +45,6 @@ public class CraftHelperPanelLine extends ContainerWidget {
 		for (CraftHelperComponent child : children) {
 			child.setX(xOffset.addAndGet(child.getLeftOffset()));
 			xOffset.addAndGet(child.getWidth() - child.getLeftOffset());
-			xOffset.addAndGet(child.getRightOffset());
 			child.setY(this.getY());
 		}
 		this.height = this.children.stream().mapToInt(CraftHelperComponent::getHeight).max().orElse(0);

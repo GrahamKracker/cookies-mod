@@ -15,7 +15,6 @@
     "EntityMixin",
     "ItemPacketCodecMixin",
     "ClickEventMixin",
-    "HoverEventMixin",
     "PlayerEntityRenderMixin",
     "PlayerEntityRenderStateMixin"
   ]

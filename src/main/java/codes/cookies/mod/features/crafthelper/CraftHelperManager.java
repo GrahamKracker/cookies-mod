@@ -62,13 +62,15 @@ public class CraftHelperManager {
 
 			var currentItem = getCurrentItem();
 
-			if (currentItem == null) {
-				pushNewCraftHelperItem(new CraftHelperItem(RepositoryItem.of("TITANIUM_DRILL_4"), 1)); //WAND_OF_RESTORATION
-				currentItem = getCurrentItem();
-			}
+			//if (currentItem == null) {
+			pushNewCraftHelperItem(new CraftHelperItem(RepositoryItem.of("TITANIUM_DRILL_3"), 2)); //WAND_OF_RESTORATION
+			currentItem = getCurrentItem();
+			//}
 
 			//if (panel == null) {
-			panel = new CraftHelperPanel(calculateWidth(inventoryScreenAccessor));
+			{
+				panel = new CraftHelperPanel(calculateWidth(inventoryScreenAccessor), currentItem);
+			}
 			/*} else {
 				panel.init(currentItem);
 			}*/
@@ -99,9 +101,9 @@ public class CraftHelperManager {
 		return screen.cookies$getBackgroundWidth() + screen.cookies$getX();
 	}
 
-	private static int calculateLeftEdge(InventoryScreenAccessor screen) {//todo special case for recipe book, right edge works
-		if (screen instanceof RecipeBookScreen<?> recipeBookScreen) {
-			return recipeBookScreen.recipeBook.getLeft() - 35; //magic number is the width of the tabs on the left, 35 is the default
+	private static int calculateLeftEdge(InventoryScreenAccessor screen) {
+		if (screen instanceof RecipeBookScreen<?> recipeBookScreen && recipeBookScreen.recipeBook.isOpen()) {
+			return recipeBookScreen.recipeBook.getLeft() - 35; //magic number is the width of the tabs on the left TODO: make all the magic numbers final static fields
 		}
 		return (((Screen) screen).width - screen.cookies$getBackgroundWidth()) / 2;
 

@@ -11,7 +11,6 @@ import codes.cookies.mod.repository.Ingredient;
 import codes.cookies.mod.repository.RepositoryItem;
 import codes.cookies.mod.repository.recipes.CraftRecipe;
 import codes.cookies.mod.repository.recipes.ForgeRecipe;
-import codes.cookies.mod.repository.recipes.calculations.RecipeCalculationResult;
 import codes.cookies.mod.screen.inventory.ForgeRecipeScreen;
 import codes.cookies.mod.utils.ColorUtils;
 import codes.cookies.mod.utils.cookies.Constants;
@@ -22,11 +21,17 @@ import codes.cookies.mod.utils.minecraft.NonCacheMutableText;
 import codes.cookies.mod.utils.minecraft.SupplierTextContent;
 import codes.cookies.mod.utils.minecraft.TextBuilder;
 import codes.cookies.mod.utils.skyblock.ForgeUtils;
+import com.mojang.logging.LogUtils;
 import lombok.Setter;
+
+import lombok.extern.java.Log;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.InventoryScreen;
+import net.minecraft.client.gui.screen.recipebook.RecipeBookWidget;
+import net.minecraft.client.gui.widget.ToggleButtonWidget;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -44,11 +49,11 @@ import java.util.function.Supplier;
 
 public class RecipeListLine extends CraftHelperPanelLine {
 	private final RecipeListLine parent;
-	private final List<RecipeListLine> recipeChildren = new ArrayList<>();
+	private final List<RecipeListLine> directChildren = new ArrayList<>();
 	protected final int depth;
 	@Setter
 	private boolean collapsed = false;
-	private ItemTracker itemTracker = new ItemTracker(ItemSources.values());
+	private final ItemTracker itemTracker = new ItemTracker(ItemSources.values());
 	private final Ingredient ingredient;
 	private boolean parentCollapsed;
 
@@ -86,7 +91,7 @@ public class RecipeListLine extends CraftHelperPanelLine {
 		this.ingredient = ingredient.multiply(multiplier);
 
 		if (parent != null) {
-			parent.recipeChildren.add(this);
+			parent.directChildren.add(this);
 		}
 
 		this.depth = depth;
@@ -97,34 +102,37 @@ public class RecipeListLine extends CraftHelperPanelLine {
 		@Override
 		public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 			if (parent != null) {
-				if (parent.parent == null && parent.recipeChildren.indexOf(RecipeListLine.this) != parent.recipeChildren.size() - 1) {
-					context.fill(RenderLayer.getGui(), x + 1, y - 1, x + 3, y + MinecraftClient.getInstance().textRenderer.fontHeight + 1, Colors.LIGHT_GRAY);
-					//|
-				}
-
 				var depth = parent.depth * 8;
-				var childCount = recursiveChildrenCount() + 1;
-
-				if (parent.recipeChildren.indexOf(RecipeListLine.this) == parent.recipeChildren.size() - 1) {
-					context.fill(RenderLayer.getGui(), depth + x + 1, y - 1, depth + x + 3, y + 4, Colors.LIGHT_GRAY);
-					//L
-				} else if ((childCount > 2 || parent.recipeChildren.size() > 1) && !collapsed) {
-					context.fill(RenderLayer.getGui(), depth + x + 1, y - 1, depth + x + 3, y + (10 * childCount) - 1, Colors.LIGHT_GRAY);
-					//|
-				}
-
-				if (collapsed) {
-					if (parent.recipeChildren.size() > 1 && parent.recipeChildren.indexOf(RecipeListLine.this) != parent.recipeChildren.size() - 1) {
-						context.fill(RenderLayer.getGui(), depth + x + 1, y - 1, depth + x + 3, y + 10, Colors.LIGHT_GRAY);
-						//|
-					} else {
-						context.fill(RenderLayer.getGui(), depth + x + 1, y - 1, depth + x + 3, y + 4, Colors.LIGHT_GRAY);
-						//L
-					}
+				if (parent.directChildren.indexOf(RecipeListLine.this) == parent.directChildren.size() - 1) {
+					drawVerticalLine(context, depth + x + 1, y - 1, Colors.LIGHT_GRAY, 2, 5);
+				} else {
+					drawVerticalLine(context, depth + x + 1, y - 1, Colors.LIGHT_GRAY, 2, getHeightIncludingChildren(RecipeListLine.this) + 1);
 				}
 
 				context.drawHorizontalLine(RenderLayer.getGui(), depth + x + 1, depth + x + 5, y + 4, Colors.LIGHT_GRAY);
 			}
+		}
+
+		public int getHeightIncludingChildren(RecipeListLine recipeChild) {
+			int height = 10;
+			for (RecipeListLine child : recipeChild.directChildren) {
+				if (!child.parentCollapsed) {
+					height += getHeightIncludingChildren(child);
+				}
+			}
+			return height;
+		}
+
+
+		public void drawVerticalLine(DrawContext context, int x, int y, int color, int width, int height) {
+			var y2 = y + height;
+			if (y2 < y) {
+				int i = y;
+				y = y2;
+				y2 = i;
+			}
+
+			context.fill(RenderLayer.getGui(), x, y + 1, x + width, y2, color);
 		}
 	};
 
@@ -135,9 +143,8 @@ public class RecipeListLine extends CraftHelperPanelLine {
 		this.addChildren(new TextComponent(new TextBuilder(text).setRunnable(this::onClick).build()));
 
 		this.addChildren(new SpacerComponent(5, 0));
-
+		
 		this.addChildren(new TextComponent("") {
-
 			public final Text unCollapsedText = new TextBuilder("▼  ").setRunnable(RecipeListLine.this::toggleCollapse)
 					.onHover(Text.empty().append(ingredient.getRepositoryItem().getFormattedName()).append("\nClick to collapse!")
 					)
@@ -150,31 +157,7 @@ public class RecipeListLine extends CraftHelperPanelLine {
 			public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 				var text = Text.empty();
 
-				/*var sourcesText = new TextBuilder("");
-
-				var itemSources = itemTracker.get(ingredient.getRepositoryItem()).getUsedSources(getTargetAmount());
-				var sources = itemSources.stream().map(Pair::getLeft).toList();
-				if (!itemSources.isEmpty()) {
-					var hover = getItemSourcesHoverText(itemTracker.getAmount(ingredient.getRepositoryItem()), sources);
-
-					if (sources.contains(ItemSources.CHESTS)) {
-						sourcesText.append("\uD83E\uDDF0 ");
-					}
-					if (sources.contains(ItemSources.FORGE)) {
-						final OptionalLong lastForgeStarted = itemTracker
-								.get(ingredient.getRepositoryItem())
-								.getLastForgeStarted();
-						sourcesText.append("(");
-						final TextBuilder forgeTime = getForgeTime(lastForgeStarted);
-						forgeTime.onHover(hover).setRunnable(RecipeListLine.this::onClick).formatted(Formatting.DARK_GRAY);
-						sourcesText.append(forgeTime.build());
-						sourcesText.append(") ");
-					}
-					sourcesText.onHover(hover);
-					text.append(sourcesText.build());
-				}*/
-
-				if (!recipeChildren.isEmpty() && getState() != State.CRAFTED) {
+				if (!directChildren.isEmpty() && getState() != State.CRAFTED) {
 					if (collapsed) {
 						text.append(collapsedText);
 					} else {
@@ -184,83 +167,6 @@ public class RecipeListLine extends CraftHelperPanelLine {
 
 				setText(text.asOrderedText(), true);
 				super.render(context, mouseX, mouseY, delta);
-			}
-
-			private MutableText getItemSourcesHoverText(int amount, List<ItemSources> itemSources) {
-				var hover = new ArrayList<Text>();
-
-				final ItemTracker.TrackedItem trackedItem = itemTracker.get(ingredient.getRepositoryItem());
-
-				final List<Pair<ItemSources, Integer>> usedSources = trackedItem.getUsedSources(amount);
-				hover.add(Text.literal("Item Sources").formatted(Formatting.GREEN));
-				for (Pair<ItemSources, Integer> usedSource : usedSources) {
-					ItemSources sources = usedSource.getLeft();
-					int usedAmount = usedSource.getRight();
-					hover.add(sources.getName()
-							.copy()
-							.formatted(Formatting.GRAY)
-							.append(": ")
-							.append(Text.literal(MathUtils.NUMBER_FORMAT.format(usedAmount))
-									.formatted(Formatting.YELLOW)));
-				}
-
-				hover.add(Text.empty());
-
-				if (itemSources.contains(ItemSources.FORGE)) {
-					final List<ForgeItemSource.Context> allForgeStart = itemTracker
-							.get(ingredient.getRepositoryItem())
-							.getAllForgeStart();
-					hover.add(Text.literal("Forge Slots").formatted(Formatting.GREEN));
-					for (ForgeItemSource.Context context : allForgeStart) {
-						final TextBuilder forgeTime = getForgeTime(OptionalLong.of(context.startTime()));
-						hover.add(new NonCacheMutableText(Text.literal("Slot #%s: ".formatted(context.slot() + 1)).formatted(Formatting.GRAY).append(forgeTime.build().formatted(Formatting.DARK_GRAY))));
-					}
-
-					hover.add(Text.empty());
-				}
-
-				var finalText = Text.empty();
-				for (int i = 0; i < hover.size(); i++) {
-					Text line = hover.get(i);
-					finalText.append(line);
-					if (i != hover.size() - 1) {
-						finalText.append(Text.literal("\n"));
-					}
-				}
-
-				return finalText;
-			}
-
-			private @NotNull TextBuilder getForgeTime(OptionalLong lastForgeStarted) {
-				TextBuilder forgeTime;
-				if (lastForgeStarted.isEmpty()) {
-					forgeTime = new TextBuilder(Text.literal("Unknown"));
-				} else {
-					final Supplier<String> supplier = getSupplier(
-							() -> ForgeUtils.getForgeTime(ingredient.getRepositoryItem()),
-							lastForgeStarted.getAsLong());
-					final SupplierTextContent supplierTextContent = new SupplierTextContent(supplier);
-					final NonCacheMutableText nonCacheMutableText = new NonCacheMutableText(MutableText.of(
-							supplierTextContent));
-					forgeTime = new TextBuilder(nonCacheMutableText);
-				}
-				return forgeTime;
-			}
-
-			private static Supplier<String> getSupplier(Supplier<Long> forgeTime, long lastForgeStartedSeconds) {
-				return () -> {
-					final long time = forgeTime.get();
-					if (time == -1) {
-						return "unknown";
-					}
-					final long delta = (System.currentTimeMillis() / 1000) - lastForgeStartedSeconds;
-					int remaining = (int) (time - delta);
-					if (remaining <= 0) {
-						return "Done";
-					}
-
-					return CookiesUtils.formattedMs(remaining * 1000L);
-				};
 			}
 		});
 	}
@@ -282,10 +188,10 @@ public class RecipeListLine extends CraftHelperPanelLine {
 	private State getState() {
 		if (this.getAmount() >= getTargetAmount()) {
 			return State.CRAFTED;
-		} else if (recipeChildren.isEmpty()) {
+		} else if (directChildren.isEmpty()) {
 			return State.NOT_CRAFTABLE;
 		} else {
-			if (recipeChildren.stream().allMatch(recipeListLine -> recipeListLine.getAmount() >= recipeListLine.getTargetAmount())) {
+			if (directChildren.stream().allMatch(recipeListLine -> recipeListLine.getAmount() >= recipeListLine.getTargetAmount())) {
 				return State.CRAFTABLE_THROUGH_CHILDREN;
 			} else {
 				return State.NOT_CRAFTABLE;
@@ -325,14 +231,6 @@ public class RecipeListLine extends CraftHelperPanelLine {
 				Formatting.RED.getColorValue(),
 				Formatting.GREEN.getColorValue(),
 				percentage);
-	}
-
-	private int recursiveChildrenCount() {
-		int count = 0;
-		for (RecipeListLine recipeChild : recipeChildren) {
-			count += recipeChild.recursiveChildrenCount();
-		}
-		return count + recipeChildren.size();
 	}
 
 	private void onClick() {

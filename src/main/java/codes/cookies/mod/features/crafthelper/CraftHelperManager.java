@@ -1,38 +1,31 @@
 package codes.cookies.mod.features.crafthelper;
 
 import codes.cookies.mod.config.ConfigManager;
-import codes.cookies.mod.events.api.ScreenKeyEvents;
 import codes.cookies.mod.features.crafthelper.ui.CraftHelperPanel;
 import codes.cookies.mod.features.crafthelper.ui.CraftHelperPanelLine;
 import codes.cookies.mod.repository.RepositoryItem;
 import codes.cookies.mod.utils.SkyblockUtils;
 import codes.cookies.mod.utils.accessors.InventoryScreenAccessor;
 
-import codes.cookies.mod.utils.cookies.CookiesUtils;
-import com.mojang.logging.LogUtils;
 import lombok.Getter;
 
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+
+import net.minecraft.client.gui.screen.ingame.RecipeBookScreen;
 
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2i;
 import org.joml.Vector2ic;
 
-import java.lang.ref.SoftReference;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
 public class CraftHelperManager {
 	private static int currentItemIndex = 0;
+	public static int scrollDelta = -100;
 
 	@Nullable
 	public static CraftHelperItem getCurrentItem() {
@@ -55,9 +48,6 @@ public class CraftHelperManager {
 		location = ConfigManager.getConfig().helpersConfig.craftHelper.craftHelperLocation.getValue();
 		ConfigManager.getConfig().helpersConfig.craftHelper.craftHelperLocation.withCallback((oldValue, newValue) -> location = newValue);
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-			if(panel == null) {
-				panel = new CraftHelperPanel(0);
-			}
 			if (!(screen instanceof InventoryScreenAccessor inventoryScreenAccessor)) {
 				return;
 			}
@@ -65,6 +55,7 @@ public class CraftHelperManager {
 			if (!SkyblockUtils.isCurrentlyInSkyblock()) {
 				return;
 			}
+
 			if (!ConfigManager.getConfig().helpersConfig.craftHelper.craftHelper.getValue()) {
 				return;
 			}
@@ -72,22 +63,17 @@ public class CraftHelperManager {
 			var currentItem = getCurrentItem();
 
 			if (currentItem == null) {
-				pushNewCraftHelperItem(new CraftHelperItem(RepositoryItem.of("TITANIUM_DRILL_3"), 1)); //WAND_OF_RESTORATION
+				pushNewCraftHelperItem(new CraftHelperItem(RepositoryItem.of("TITANIUM_DRILL_4"), 1)); //WAND_OF_RESTORATION
+				currentItem = getCurrentItem();
 			}
 
-			panel.getLines().clear();
-			panel.createHeader(currentItem);
-			panel.addLine(panel.Spacer);
+			//if (panel == null) {
+			panel = new CraftHelperPanel(calculateWidth(inventoryScreenAccessor));
+			/*} else {
+				panel.init(currentItem);
+			}*/
 
 			screen.addDrawableChild(panel);
-
-			for (var line : currentItem.getRecipeLines()) {
-				panel.addLine(line);
-			}
-
-			for (CraftHelperPanelLine line : panel.getLines()) {
-				line.update();
-			}
 
 			ScreenEvents.beforeRender(screen).register((screen1, drawContext, i, i1, v) -> {
 				panel.setWidth(calculateWidth(inventoryScreenAccessor));
@@ -96,12 +82,6 @@ public class CraftHelperManager {
 				panel.setY(position.y());
 			});
 
-			ScreenMouseEvents.allowMouseClick(screen).register(CraftHelperManager::onMouseClick);
-			ScreenMouseEvents.allowMouseScroll(screen).register(CraftHelperManager::onMouseScroll);
-			ScreenKeyboardEvents.allowKeyPress(screen).register(CraftHelperManager::onKeyPressed);
-			ScreenKeyboardEvents.allowKeyRelease(screen).register(CraftHelperManager::onKeyReleased);
-			ScreenKeyEvents.getExtension(screen).cookies$allowCharTyped().register(CraftHelperManager::onCharTyped);
-			
 			ScreenEvents.afterTick(screen).register((screen1) -> {
 				if (ticksSinceLastUpdate.getAndIncrement() > 60) {
 					panel.getLines().forEach(CraftHelperPanelLine::update);
@@ -119,8 +99,12 @@ public class CraftHelperManager {
 		return screen.cookies$getBackgroundWidth() + screen.cookies$getX();
 	}
 
-	private static int calculateLeftEdge(InventoryScreenAccessor screen) {//todo special case for recipe book
+	private static int calculateLeftEdge(InventoryScreenAccessor screen) {//todo special case for recipe book, right edge works
+		if (screen instanceof RecipeBookScreen<?> recipeBookScreen) {
+			return recipeBookScreen.recipeBook.getLeft() - 35; //magic number is the width of the tabs on the left, 35 is the default
+		}
 		return (((Screen) screen).width - screen.cookies$getBackgroundWidth()) / 2;
+
 	}
 
 	private static int calculateWidth(InventoryScreenAccessor screen) {
@@ -149,26 +133,6 @@ public class CraftHelperManager {
 		if (pos.y + i > screenHeight) {
 			pos.y = screenHeight - i;
 		}
-	}
-
-	public static boolean onMouseClick(Screen screen, double v, double v1, int i) {
-		return true;
-	}
-
-	public static boolean onMouseScroll(Screen screen, double v, double v1, double v2, double v3) {
-		return true;
-	}
-
-	public static boolean onKeyPressed(Screen screen, int i, int i1, int i2) {
-		return true;
-	}
-
-	public static boolean onKeyReleased(Screen screen, int i, int i1, int i2) {
-		return true;
-	}
-
-	public static boolean onCharTyped(Screen screen, char c, int i) {
-		return true;
 	}
 
 	public static void pushNewCraftHelperItem(CraftHelperItem item) {

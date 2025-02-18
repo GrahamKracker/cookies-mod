@@ -69,4 +69,14 @@ public class CraftHelperPanelLine extends ContainerWidget {
 	public List<CraftHelperComponent> children() {
 		return children;
 	}
+
+	@Override
+	protected int getContentsHeightWithPadding() {
+		return this.height;
+	}
+
+	@Override
+	protected double getDeltaYPerScroll() {
+		return 0;
+	}
 }

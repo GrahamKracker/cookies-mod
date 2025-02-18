@@ -43,11 +43,23 @@ public class CraftHelperPanel extends ContainerWidget implements Element, Select
 
 	public CraftHelperPanel(int width) {
 		super(0, 0, width, 0, Text.of(""));
-		var item = CraftHelperManager.getCurrentItem();
-		if (item != null) {
-			createHeader(item);
+		init(CraftHelperManager.getCurrentItem());
+	}
 
-			addLine(Spacer);
+	public void init(CraftHelperItem item) {
+		if (item == null) {
+			return;
+		}
+		lines.clear();
+		createHeader(item);
+		addLine(Spacer);
+
+		for (var line : item.getRecipeLines()) {
+			addLine(line);
+		}
+
+		for (CraftHelperPanelLine line : getLines()) {
+			line.update();
 		}
 	}
 
@@ -58,7 +70,7 @@ public class CraftHelperPanel extends ContainerWidget implements Element, Select
 
 	@Override
 	protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-		setY(getY() + scrollDelta);
+		setY(getY() + CraftHelperManager.scrollDelta);
 		int totalHeight = 14;
 		for (CraftHelperPanelLine craftHelperPanelLine : lines) {
 			int line1Height = craftHelperPanelLine.getHeight();
@@ -75,13 +87,14 @@ public class CraftHelperPanel extends ContainerWidget implements Element, Select
 			context.drawGuiTexture(RenderLayer::getGuiTextured, Identifier.ofVanilla("tooltip/background"), getX(), getY(), this.width, totalHeight);
 			context.drawGuiTexture(RenderLayer::getGuiTextured, Identifier.ofVanilla("tooltip/frame"), getX(), getY(), this.width, totalHeight);
 
+			context.enableScissor(getX() + 15, 0, this.width - 10, MinecraftClient.getInstance().getWindow().getHeight());
 			context.getMatrices().push();
 			{
 				context.getMatrices().translate(0, 0, 200);
 
 				AtomicInteger widgetY = new AtomicInteger(getY() + 14);
 				for (CraftHelperPanelLine line : lines) {
-					line.setX(this.getX() + 15);
+					line.setX(this.getX() + 15 - horizontalScroll);
 					var lineHeight = line.getHeight();
 					line.setY(widgetY.getAndAdd(lineHeight == 0 ? 0 : lineHeight + 1));
 					line.renderWidget(context, mouseX, mouseY, delta);
@@ -89,6 +102,7 @@ public class CraftHelperPanel extends ContainerWidget implements Element, Select
 
 				context.getMatrices().pop();
 			}
+			context.disableScissor();
 			context.getMatrices().pop();
 		}
 	}
@@ -128,7 +142,7 @@ public class CraftHelperPanel extends ContainerWidget implements Element, Select
 		return mouseX >= getX() && mouseX <= getX() + width;
 	}
 
-	private int scrollDelta = -100;
+	private int horizontalScroll = 0;
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
@@ -136,8 +150,19 @@ public class CraftHelperPanel extends ContainerWidget implements Element, Select
 			return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
 		}
 
-		scrollDelta += 2 * (int) verticalAmount;
+		CraftHelperManager.scrollDelta += 2 * (int) verticalAmount;
+		horizontalScroll += (int) horizontalAmount;
 		return true;
+	}
+
+	@Override
+	protected int getContentsHeightWithPadding() {
+		return this.height;
+	}
+
+	@Override
+	protected double getDeltaYPerScroll() {
+		return 0;
 	}
 
 	public void createHeader(CraftHelperItem item) {

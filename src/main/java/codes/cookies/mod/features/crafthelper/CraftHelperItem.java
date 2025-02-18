@@ -11,7 +11,6 @@ import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Getter
@@ -48,15 +47,15 @@ public class CraftHelperItem {
 	}
 
 	private void finishRecalculation(RecipeCalculationResult recipeCalculationResult) {
-		addSubRecipe(recipeCalculationResult, null, 0, recipeCalculationResult);
+		addSubRecipe(recipeCalculationResult, null, 0);
 	}
 
-	private void addSubRecipe(RecipeCalculationResult subRecipe, RecipeListLine parent, int depth, RecipeCalculationResult topRecipe) {
+	private void addSubRecipe(RecipeCalculationResult subRecipe, RecipeListLine parent, int depth) {
 		var recipeLine = new RecipeListLine(parent, depth, subRecipe.getIngredient(), amount);
 		recipeLines.add(recipeLine);
 		subRecipe.getRequired().forEach(recipeResult -> {
 			if (recipeResult instanceof RecipeCalculationResult subRecipe2) {
-				addSubRecipe(subRecipe2, recipeLine, depth + 1, topRecipe);
+				addSubRecipe(subRecipe2, recipeLine, depth + 1);
 			} else if (recipeResult instanceof Ingredient ingredient) {
 				recipeLines.add(new RecipeListLine(recipeLine, depth + 1, ingredient, amount));
 			}
